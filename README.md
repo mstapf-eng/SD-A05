@@ -1,5 +1,5 @@
-#Collaborative Senior Design Project
-##A05-Autonomous Data Telemetry for Amateur Radio Satellites
+# Collaborative Senior Design Project
+## A05-Autonomous Data Telemetry for Amateur Radio Satellites
 
 Amateur radio satellites are low earth orbiting (LEO) and their pass overhead is brief and often occurs at inopportune times during the week and weekend. 
 The Senior Project is to automate the process for data telemetry downlink and uplink from and to the satellite with autonomous control with the regulations 
