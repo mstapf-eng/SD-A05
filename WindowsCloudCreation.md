@@ -9,7 +9,7 @@
 ##### Build from the source using mainline
 ###### Windows
 To build
-<mkdir build.paho
+'<mkdir build.paho
 
 cd build.paho
 
@@ -17,13 +17,13 @@ call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
 
 cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
 
-nmake>
+nmake>'
 To install
-<C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin>
+'<C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin>'
 ###### Mac/Linux
 To build
-<git clone https://github.com/eclipse/paho.mqtt.c.git
+'<git clone https://github.com/eclipse/paho.mqtt.c.git
 cd org.eclipse.paho.mqtt.c.git
 make>
 To install
-<sudo make install>
+<sudo make install>'
