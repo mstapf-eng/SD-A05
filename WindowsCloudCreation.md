@@ -1,12 +1,12 @@
 # Creating Cloud MQTT Broker Using C++ and Windows
-## Works on Mac as well
+## Following the listed tutorial from the Eclipse Github
 #### https://github.com/eclipse/paho.mqtt.cpp
 
 #### 1. Download CMake GUI v3.5 or newer and Visual Studio 2015 or newer
 #### 2. Install the Paho MQTT C library
-##### Download library Directly from Site
-###### https://projects.eclipse.org/projects/iot.paho/downloads
-##### Build from the source using mainline
+###### Download library Directly from Site
+https://projects.eclipse.org/projects/iot.paho/downloads
+###### Build from the source using mainline
 ###### Windows
 To build
 ```
