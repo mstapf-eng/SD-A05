@@ -62,3 +62,4 @@ msgs = [{'topic':"paho/test/multiple", 'payload':"multiple 1"},
 publish.multiple(msgs, hostname="tailor.cloudmqtt.com", port= , client_id=" ", keepalive=60,
     will=None, auth={'username':" ", 'password':" "}, tls=None, protocol=mqtt.MQTTv311, transport="tcp")
  ```
+To create even cleaner code than can publish and recieve multiple inputs or outputs, using class functions and then calling these functions in their implementation goes a long way in creating clean efficient code. 
