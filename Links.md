@@ -1,4 +1,4 @@
-(https://github.com/beli-sk/qsologc)
+<https://github.com/beli-sk/qsologc>
 (https://github.com/b3n4kh/chirp)
 (https://github.com/iw2nke/Universal_HamRadio_Remote_HTML5)
 (https://github.com/bjohan/python_cat_lib)
