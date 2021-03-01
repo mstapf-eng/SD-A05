@@ -23,8 +23,6 @@
 
 <https://github.com/kotfu/netcontrol>
 
-<https://github.com/mgiugliano/CWviaCAT>
-
 <https://github.com/bjohan/python_cat_lib>
 
 <https://github.com/4Z1KD/PTTpy>
