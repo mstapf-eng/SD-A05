@@ -4,7 +4,7 @@ DEBUG = True  # Debug logging level (False is no output).
 DELAY = 0.15  # [ms] Interval to wait for radio's responses.
 
 VERSION = '0.1'
-AUTHOR = 'MG (iv3ifz)'
+AUTHOR = 'A05'
 
 import time
 import serial
