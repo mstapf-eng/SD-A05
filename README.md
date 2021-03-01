@@ -7,8 +7,8 @@ of the federal communication Commission (FCC). This capability is not available 
 The process will utilize exact time and date information from the Internet and control of the VHF/UHF transceiver at K3TU. Hardware design of the interface and significant software design is required. For uploading data an Amateur Radio license is required
 
 ## Gui
-
+(https://github.com/mstapf-eng/SD-A05/tree/master/gui)
 ## Satellite Tracking
-
+(https://github.com/mstapf-eng/SD-A05/tree/master/sat_tracking)
 ## Transciever Communication
-
+(https://github.com/mstapf-eng/SD-A05/tree/master/transciever_comm)
