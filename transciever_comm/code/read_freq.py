@@ -1,3 +1,4 @@
+#/python3
 from CWvCAT import *
 
 NAME = 'readIF.py'
