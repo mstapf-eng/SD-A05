@@ -1,7 +1,7 @@
 #/python3
-from CWvCAT import *
+from init_port import *
 
-NAME = 'readIF.py'
+NAME = 'read_freq.py'
 
 ser = initSerialPort(COMPORT)
 
