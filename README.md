@@ -12,4 +12,3 @@ The process will utilize exact time and date information from the Internet and c
 
 ## Transciever Communication
 
-
