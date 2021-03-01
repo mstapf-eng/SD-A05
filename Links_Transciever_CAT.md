@@ -1,3 +1,10 @@
+#Helpful Links for Transciever Command Line Coding
+##The following two links have been used and modified for transciever and computer control
+<https://github.com/elitegreg/pyradioctl/tree/master/src/radioctl>
+
+<https://github.com/mgiugliano/CWviaCAT>
+
+##The rest of these links could still be used for assistance
 <https://github.com/beli-sk/qsologc>
 
 <https://github.com/b3n4kh/chirp>
