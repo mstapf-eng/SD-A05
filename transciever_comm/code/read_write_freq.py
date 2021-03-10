@@ -1,4 +1,4 @@
-#/python3
+#!/usr/bin/python3
 from init_port import *
 
 NAME = 'read_freq.py'
