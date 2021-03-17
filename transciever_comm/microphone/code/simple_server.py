@@ -3,7 +3,7 @@
 import socket, pickle
 import npy_arr_rec as rec
 
-def create_port():
+def create_port(audio_time = 3):
     s = socket.socket()
     host = socket.gethostname()
     port = 9999
@@ -13,7 +13,7 @@ def create_port():
     print("Waiting for connection")
     s.listen(5)
 
-    data = rec.record(10) #record 10 second audio transmission
+    data = rec.record(audio_time) #record 3 second audio transmission
     print("data recorded")
     print(data)
     data_str = pickle.dumps(data)
