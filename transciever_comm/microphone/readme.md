@@ -11,7 +11,7 @@ data_str = pickle.dumps(data)
         conn.send(data_str)
         conn.close()
 ```
-<img src = "https://user-images.githubusercontent.com/60630614/111500007-e7ee0500-8719-11eb-8511-145a457213d1.png" width = "100" height = "100">
+<img src = "https://user-images.githubusercontent.com/60630614/111500007-e7ee0500-8719-11eb-8511-145a457213d1.png" width = "1000" height = "1000">
 ## Decoding the numpy array transmitted across the TCP socket and plotting it
 ```
 data = b""
