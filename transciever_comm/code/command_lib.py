@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from init_port import *
 COMPORT = 'COM1'
 ser = initSerialPort(COMPORT)
