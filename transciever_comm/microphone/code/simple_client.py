@@ -15,6 +15,7 @@ def read_port(host = '129.32.60.214'):
         data += packet
 
     data_arr = pickle.loads(data)
+    print("data decoded")
     print(data_arr)
     s.close()
 
