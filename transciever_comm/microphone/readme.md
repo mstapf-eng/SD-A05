@@ -11,5 +11,18 @@ data = rec.record(10)
         conn.close()
 ```
 ![Figure_1](https://user-images.githubusercontent.com/60630614/111500007-e7ee0500-8719-11eb-8511-145a457213d1.png)
-## Decoding the numpy array and plotting it
+## Decoding the numpy array transmitted across the TCP socket and plotting it
+```
+data = b""
+    while True:
+        packet = s.recv(4096)
+        if not packet: break
+        data += packet
+
+    data_arr = pickle.loads(data)
+    print(data_arr)
+    s.close()
+
+    rec.plot(data_arr)
+```
 ![Figure_1](https://user-images.githubusercontent.com/60630614/111499858-c3922880-8719-11eb-9150-20ab3b2a4107.png)
