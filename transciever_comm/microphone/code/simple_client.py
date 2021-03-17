@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import socket, pickle
 import npy_arr_rec as rec
 
