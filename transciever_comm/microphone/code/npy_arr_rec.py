@@ -1,4 +1,4 @@
-# !/bin/python3
+#!/usr/bin/python3
 import sounddevice as sd
 import matplotlib.pyplot as plt
 
