@@ -15,6 +15,7 @@ def create_port():
 
     data = rec.record(10) #record 10 second audio transmission
     print("data recorded")
+    print(data)
     data_str = pickle.dumps(data)
     print("data encoded")
     while True:
