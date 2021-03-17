@@ -1,4 +1,4 @@
-#/python3
+#!/usr/bin/python3
 COMPORT = 'COM1'  # Name of the serial port.
 DEBUG = True  # Debug logging level (False is no output).
 DELAY = 0.15  # [ms] Interval to wait for radio's responses.
