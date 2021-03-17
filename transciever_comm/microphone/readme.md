@@ -2,8 +2,8 @@
 ## Transmitting 10 second audio recorded data using the py_arr_rec.py file and encoding it
 ```
 data = rec.record(10)
-    print("data recorded")
-    data_str = pickle.dumps(data)
+print("data recorded")
+data_str = pickle.dumps(data)
     while True:
         conn, addr = s.accept()
         print('Got connection from', addr)
@@ -14,14 +14,13 @@ data = rec.record(10)
 ## Decoding the numpy array transmitted across the TCP socket and plotting it
 ```
 data = b""
-    while True:
-        packet = s.recv(4096)
-        if not packet: break
-        data += packet
-
-    data_arr = pickle.loads(data)
-    print(data_arr)
-    s.close()
+while True:
+    packet = s.recv(4096)
+    if not packet: break
+    data += packet
+data_arr = pickle.loads(data)
+print(data_arr)
+s.close()
 
     rec.plot(data_arr)
 ```
