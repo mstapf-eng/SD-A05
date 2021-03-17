@@ -1,34 +1,29 @@
-import logging
-from time import sleep
-import numpy as np
-from numpysocket import NumpySocket
+import socket, pickle
 import npy_arr_rec as rec
 
-logger = logging.getLogger('simple client')
-logger.setLevel(logging.INFO)
+def read_port(host = '129.32.60.214'):
+    s = socket.socket()
+    host = host
+    port = 9999
 
-host_ip = 'Megans-MacBook-Pro.local'  # change me
+    s.connect((host,port))
 
-npSocket = NumpySocket()
-while(True):
-    try:
-        npSocket.startClient(host_ip, 9999)
-        break
-    except:
-        logger.warning("connection failed, make sure `server` is running.")
-        sleep(1)
-        continue
+    data = b""
+    while True:
+        packet = s.recv(4096)
+        if not packet: break
+        data += packet
 
-logger.info("connected to server")
+    data_arr = pickle.loads(data)
+    print(data_arr)
+    s.close()
 
-frame = np.arange(1000)
-data = rec.record(3)
-logger.info("sending numpy array:")
-logger.info(data)
-npSocket.send(data)
+    print("Playback occuring")
+    rec.playback(data_arr)
+    print("Playback done")
+    rec.plot(data_arr)
 
-logger.info("array sent, closing connection")
-try:
-    npSocket.close()
-except OSError as err:
-    logging.error("client already disconnected")
+    #print ('Received', repr(data_arr))
+
+
+read_port()
