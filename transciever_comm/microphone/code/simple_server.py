@@ -1,24 +1,25 @@
 #!/usr/bin/python3
 
-import logging
-import numpy as np
-from numpysocket import NumpySocket
+import socket, pickle
+import npy_arr_rec as rec
 
-logger = logging.getLogger('simple server')
-logger.setLevel(logging.INFO)
+def create_port():
+    s = socket.socket()
+    host = socket.gethostname()
+    port = 9999
 
-npSocket = NumpySocket()
+    s.bind((host, port))
 
-logger.info("starting server, waiting for client")
-npSocket.startServer(9999)
+    print("Waiting for connection")
+    s.listen(5)
 
-frame = npSocket.recieve()
-logger.info("array recieved:")
-logger.info(frame)
-
-logger.info("closing connection")
-
-try:
-    npSocket.close()
-except OSError as err:
-    logging.error("server already disconnected")
+    data = rec.record(10)
+    print("data recorded")
+    data_str = pickle.dumps(data)
+    while True:
+        conn, addr = s.accept()
+        print('Got connection from', addr)
+        conn.send(data_str)
+        conn.close()
+        rec.plot(data)
+create_port()
