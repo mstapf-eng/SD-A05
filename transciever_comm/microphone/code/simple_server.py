@@ -13,9 +13,10 @@ def create_port():
     print("Waiting for connection")
     s.listen(5)
 
-    data = rec.record(10)
+    data = rec.record(10) #record 10 second audio transmission
     print("data recorded")
     data_str = pickle.dumps(data)
+    print("data encoded")
     while True:
         conn, addr = s.accept()
         print('Got connection from', addr)
