@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import sounddevice as sd
+import scipy.io.wavfile as sc
 import matplotlib.pyplot as plt
 
 def record(duration = None, fs = 44100, channels = 2):
@@ -15,6 +16,8 @@ def plot(recording):
     plt.xlabel("Time")
     plt.title("Audio Sample")
     plt.show()
+def write(filename, data, fs = 44100):
+    sc.write(filename, fs, data)
 
 
 '''
