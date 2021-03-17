@@ -20,9 +20,10 @@ def read_port(host = '129.32.60.214'):
     print(data_arr)
     s.close()
 
-    print("Playback occuring")
-    rec.playback(data_arr)
-    print("Playback done")
+    #print("Playback occuring")
+    #rec.playback(data_arr)
+    #print("Playback done")
+    rec.write("file1.wav", data_arr)
     rec.plot(data_arr)
 
     #print ('Received', repr(data_arr))
