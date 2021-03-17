@@ -11,7 +11,7 @@ data_str = pickle.dumps(data)
         conn.send(data_str)
         conn.close()
 ```
-![Figure_1](https://user-images.githubusercontent.com/60630614/111500007-e7ee0500-8719-11eb-8511-145a457213d1.png)
+![Figure_1](https://user-images.githubusercontent.com/60630614/111500007-e7ee0500-8719-11eb-8511-145a457213d1.png = 250x250)
 ## Decoding the numpy array transmitted across the TCP socket and plotting it
 ```
 data = b""
@@ -25,5 +25,5 @@ s.close()
 
     rec.plot(data_arr)
 ```
-![Figure_1](https://user-images.githubusercontent.com/60630614/111499858-c3922880-8719-11eb-9150-20ab3b2a4107.png)
+![Figure_1](https://user-images.githubusercontent.com/60630614/111499858-c3922880-8719-11eb-9150-20ab3b2a4107.png = 250x250)
 ### Both audio plots match, showing no noise is added to the audio sample during transmission across TCP socket
