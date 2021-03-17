@@ -31,4 +31,5 @@ s.close()
 <p align="center">
     <img src = "https://user-images.githubusercontent.com/60630614/111499858-c3922880-8719-11eb-9150-20ab3b2a4107.png" width = "500" height = "500">
 </p>
-### Both audio plots match, showing no noise is added to the audio sample during transmission across TCP socket
+
+Both audio plots match, showing no noise is added to the audio sample during transmission across TCP socket
