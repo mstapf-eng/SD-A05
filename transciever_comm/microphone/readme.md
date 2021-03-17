@@ -1,4 +1,5 @@
 # Getting microphone input and transmitting it across TCP Socket
+In order to transmit audio samples over a TCP socket with hope to as little interference as possible all audio samples were kept as numpy arrays and transmitted as such.
 ## Transmitting 10 second audio recorded data using the py_arr_rec.py file and encoding it
 ```
 data = rec.record(10)
