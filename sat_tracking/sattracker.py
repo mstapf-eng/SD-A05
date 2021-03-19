@@ -1,4 +1,3 @@
-
 import sys
 import time
 import datetime
@@ -43,8 +42,16 @@ class Tracker():
         return self.satellite.range
 
     def doppler(self, frequency_hz=0): #modified to return doppler shifted frequency
-        ''' returns doppler shifted frequency in MHz '''
-        return ((-self.satellite.range_velocity / 299792458. * frequency_hz) + frequency_hz)/1e6
+        ''' returns doppler shifted frequency in 11-digit format for transceiver '''
+        calc_doppler = ((-self.satellite.range_velocity / 299792458. * frequency_hz) + frequency_hz) #calcs doppler shifted freq in Hz
+        temp_calc = str(calc_doppler)#make freq in Hz a string
+        if len(temp_calc) == 8:
+            calc_doppler = temp_calc.zfill(3) #add 3 leading zeros
+        elif len(temp_calc) == 9:
+            calc_doppler = temp_calc.zfill(2)
+        elif len(temp_calc) == 10:
+            calc_doppler = temp_calc.zfill(1)
+        return(calc_doppler)
 
     def ecef_coordinates(self):
         ''' returns satellite earth centered cartesian coordinates
@@ -79,27 +86,20 @@ class Tracker():
         return x, y, z
 
 '''
-
 if __name__ == "__main__":
     # taken from: http://celestrak.com/NORAD/elements/cubesat.txt
     ec1_tle = { "name": "ESTCUBE 1", \
                 "tle1": "1 39161U 13021C   14364.09038846  .00002738  00000-0  45761-3 0  7997", \
                 "tle2": "2 39161  98.0855  83.4746 0010705 128.9405 231.2717 14.70651844 88381"}
-
     # http://www.gpscoordinates.eu/show-gps-coordinates.php
     tallinn = ("59.4000", "24.8170", "0")
-
     tracker = Tracker(satellite=ec1_tle, groundstation=tallinn)
-
     while 1:
         tracker.set_epoch(time.time())
-
         print("az         : %0.1f" % tracker.azimuth())
         print("ele        : %0.1f" % tracker.elevation())
         print("range      : %0.0f km" % (tracker.range()/1000))
         print("range rate : %0.3f km/s" % (tracker.satellite.range_velocity/1000))
         print("doppler    : %0.0f Hz" % (tracker.doppler(100e6)))
-
         time.sleep(0.5)
 '''
-
