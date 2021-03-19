@@ -8,34 +8,17 @@ from bs4 import BeautifulSoup
 from pyorbital.orbital import Orbital
 from tzlocal import get_localzone
 import LETdec as dec
-from pysattracker import sattracker
-
+import sattracker
+from init_port import *
+ser = initSerialPort(COMPORT)
 
 class Sat: #each satellite from the text file is stored as an object of class sat
-    def __init__(self, tle = "", station = "", catalogNum = 0, classification = "", desigYR = 0, desigNU = 0, desigP = "", epochYR = 0, epochDY = 0, firstDer = 0, secDer = 0, drag = 0, ephType = 0, elNum = 0, checkSum1 = 0, checkSum2 = 0, inclination = 0, rightAsc = 0, ecc = 0, Per = 0, Anom = 0, Mot = 0, revNum = 0, pass_window = [], freq = 0):
+    def __init__(self, tle = "", station = "", catalogNum = 0, checkSum1 = 0, checkSum2 = 0,pass_window = [], freq = 0):
         self.tle = tle #the web parsed TLE as a string
         self.station = station #satellite name
         self.catalogNum = catalogNum #satellite ID number used to lookup satellites
-        self.classification = classification
-        self.desigYR = desigYR
-        self.desigNU = desigNU
-        self.desigP = desigP
-        self.epochYR = epochYR
-        self.epochDY = epochDY
-        self.firstDer = firstDer
-        self.secDer = secDer
-        self.drag = drag
-        self.ephType = ephType
-        self.elNum = elNum
         self.checkSum1 = checkSum1
         self.checkSum2 = checkSum2
-        self.inclination = inclination
-        self.rightAsc = rightAsc
-        self.ecc = ecc
-        self.Per = Per
-        self.Anom = Anom
-        self.Mot = Mot
-        self.revNum = revNum
         self.pass_window = pass_window #Adjusted pass window + or - X minutes around TCA
         self.freq = freq #satellite downlink frequency in MHz
 
@@ -79,7 +62,7 @@ class Sat: #each satellite from the text file is stored as an object of class sa
 
     def calc_doppler(self):
 
-
+        global doppler
         ground_coords = ("39.98251", "75.15285", "0") #MAY NEED TO INCLUDE HEIGHT OF ANTENNAE ON THE ROOF FOR ACCURACY
 
         tle_split = self.tle.splitlines()
@@ -91,20 +74,23 @@ class Sat: #each satellite from the text file is stored as an object of class sa
         tracker = sattracker.Tracker(satellite=tle_dict, groundstation=ground_coords)
 
 
+
         while datetime.utcnow() < datetime.strptime(self.pass_window[1],"%Y-%m-%d %H:%M:%S" ): #loop runs until the end of satellite pass
 
             tracker.set_epoch(time.time()) ##sets the current time as the epoch (observation time), run this at the AOS
 
-            print("az         : %0.1f" % tracker.azimuth())
-            print("ele        : %0.1f" % tracker.elevation())
-            print("range      : %0.0f km" % (tracker.range() / 1000))
-            print("range rate : %0.3f km/s" % (tracker.satellite.range_velocity / 1000))
-            print("doppler    : %0.0f MHz" % (tracker.doppler(self.freq*1e6)))  ##send Doppler shifted freq in MHz to transceiver
+            #print("az         : %0.1f" % tracker.azimuth())
+            #print("ele        : %0.1f" % tracker.elevation())
+            #print("range      : %0.0f km" % (tracker.range() / 1000))
+            #print("range rate : %0.3f km/s" % (tracker.satellite.range_velocity / 1000))
+            doppler = tracker.doppler(self.freq*1e6)  ##send Doppler shifted freq in MHz to transceiver
+            data = send_command(ser, 'FA' + doppler + ';', 0)
 
 
             time.sleep(0.5)
+        ser.close()
 
-
+        print("This pass for "+self.station.rstrip()+ " has ended. Select another satellite.")
 
     def to_transceiver(self):
 
@@ -112,12 +98,14 @@ class Sat: #each satellite from the text file is stored as an object of class sa
 
         if (self.pass_window != None): #if there is a pass within the alotted time
 
+            print("Waiting for " +self.station.rstrip()+ " to enter your sky...\n")
             time.sleep(timedelta.total_seconds(datetime.strptime(self.pass_window[0],"%Y-%m-%d %H:%M:%S" ) - datetime.utcnow())) #suspend execution until the satellite pass begins
 
+            print("Now downlinking from "+self.station.rstrip()+ "...\n")
             self.calc_doppler()
 
         else:
-            print("This satellite does not pass within the given time frame.")
+            print("This satellite does not pass within the alotted time frame. Select another satellite.")
 
 
 
@@ -132,14 +120,12 @@ def parser(link):
 
     stringToFile(lines)
 
-    station,catalogNumber,classification,desigYR,desigNU,desigP,epochYR,epochDY,firstDer,secDer,drag,ephType,elNum,checkSum1,inclination,rightAsc,ecc,Per,Anom,Mot,revNum,checkSum2,lengthSt = dec.decode("kep_el.txt")##returns TLE's for all satellites listed
+    station,catalogNumber,checkSum1,checkSum2,lengthSt = dec.decode("kep_el.txt")##returns TLE's for all satellites listed
 
     satList = []
 
     for i in range(0, lengthSt):
-        newSat = Sat("",station[i], catalogNumber[i], classification[i], desigYR[i], desigNU[i], desigP[i], epochYR[i],
-                     epochDY[i], firstDer[i], secDer[i], drag[i], ephType[i], elNum[i], checkSum1[i], checkSum2[i],
-                     inclination[i], rightAsc[i], ecc[i], Per[i], Anom[i], Mot[i], revNum[i])
+        newSat = Sat("",station[i], catalogNumber[i],checkSum1[i], checkSum2[i])
         satList.append(newSat)
 
     k = open("kep_el.txt", "r")
@@ -258,4 +244,3 @@ parser("https://www.amsat.org/tle/current/nasabare.txt")
 
 
 #sats['AO-07'].to_transceiver()
-
