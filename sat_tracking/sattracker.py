@@ -44,14 +44,14 @@ class Tracker():
     def doppler(self, frequency_hz=0): #modified to return doppler shifted frequency
         ''' returns doppler shifted frequency in 11-digit format for transceiver '''
         calc_doppler = ((-self.satellite.range_velocity / 299792458. * frequency_hz) + frequency_hz)  # calcs doppler shifted freq in Hz
-        temp_calc = str(round(calc_doppler, 1)).replace('.', '')  #round calculation to 1 decimal point, make it a string, and remove decimal point
-        if len(temp_calc) == 9:
-            calc_doppler = temp_calc.zfill(2)  # add 2 leading zeros
+        temp_calc = str(round(calc_doppler))  #round calculation, make it a string
+        if len(temp_calc) == 8:
+            calc_doppler = temp_calc.zfill(3)  # add 3 leading zeros
+        elif len(temp_calc) == 9:
+            calc_doppler = temp_calc.zfill(2)
         elif len(temp_calc) == 10:
             calc_doppler = temp_calc.zfill(1)
-        elif len(temp_calc) == 11:
-            calc_doppler = temp_calc
-        return (calc_doppler)
+        return (calc_doppler)    
     
     def ecef_coordinates(self):
         ''' returns satellite earth centered cartesian coordinates
