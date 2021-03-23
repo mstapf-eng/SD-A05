@@ -84,7 +84,7 @@ class Sat: #each satellite from the text file is stored as an object of class sa
             #print("range      : %0.0f km" % (tracker.range() / 1000))
             #print("range rate : %0.3f km/s" % (tracker.satellite.range_velocity / 1000))
             doppler = tracker.doppler(self.freq*1e6)  ##send Doppler shifted freq in MHz to transceiver
-            data = send_command(ser, 'FA' + doppler + ';', 0)
+            data = send_command(ser, 'FA' + str(doppler) + ';', 0)
 
 
             time.sleep(0.5)
