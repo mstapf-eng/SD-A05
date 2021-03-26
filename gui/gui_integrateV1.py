@@ -1,3 +1,4 @@
+###webScraping.py
 import tkinter as tk
 import re
 import time
@@ -9,7 +10,7 @@ from tzlocal import get_localzone
 import LETdec as dec
 import sattracker
 from init_port import *
-#ser = initSerialPort(COMPORT)
+ser = initSerialPort(COMPORT)
 
 class Sat: #each satellite from the text file is stored as an object of class sat
     def __init__(self, tle = "", station = "", catalogNum = 0, checkSum1 = 0, checkSum2 = 0,pass_window = [], freq = 0):
@@ -26,11 +27,9 @@ class Sat: #each satellite from the text file is stored as an object of class sa
         time = datetime.utcnow()
 
         orb = Orbital(self.station.rstrip(), "best_file.txt")
-        passes = orb.get_next_passes(time, 4, 75.15285, 39.98251, 0, tol=0.001, horizon=0)  # Temple radio room coords, longitude value is actually negative
+        passes = orb.get_next_passes(time, 1, 75.15285, 39.98251, 0, tol=0.001, horizon=0)  # Temple radio room coords, longitude value is actually negative
                                         #  ^ time in hours to look for sats
                                         # can set a input box for user
-
-        print(self.station.rstrip())
         if len(passes) != 0:
 
             for x in range(0, len(passes)):
@@ -46,7 +45,6 @@ class Sat: #each satellite from the text file is stored as an object of class sa
 
             for y in range(0, len(new_passes)):
                 now_local.append(new_passes[y].astimezone(get_localzone()))
-                #now_local[y] = now_local[y].strftime(format)
 
             real_pass_window = now_local
 
@@ -75,10 +73,6 @@ class Sat: #each satellite from the text file is stored as an object of class sa
 
             tracker.set_epoch(time.time()) ##sets the current time as the epoch (observation time), run this at the AOS
 
-            #print("az         : %0.1f" % tracker.azimuth())
-            #print("ele        : %0.1f" % tracker.elevation())
-            #print("range      : %0.0f km" % (tracker.range() / 1000))
-            #print("range rate : %0.3f km/s" % (tracker.satellite.range_velocity / 1000))
             doppler = tracker.doppler(self.freq*1e6)  ##send Doppler shifted freq in MHz to transceiver
             data = send_command(ser, 'FA' + str(doppler) + ';', 0)
 
@@ -97,6 +91,7 @@ class Sat: #each satellite from the text file is stored as an object of class sa
 
             print("Waiting for " +self.station.rstrip()+ " to enter your sky...\n")
             pg2_label_status.config(text="Waiting for " +self.station.rstrip()+ " to enter your sky...")
+
             time.sleep(timedelta.total_seconds(datetime.strptime(self.pass_window[0],"%Y-%m-%d %H:%M:%S" ) - datetime.utcnow())) #suspend execution until the satellite pass begins
 
             print("Now downlinking from "+self.station.rstrip()+ "...\n")
@@ -111,7 +106,6 @@ def parser(link):
     result = soup.find_all(text=True)
 
     lines = listToString(result)
-    print(lines)  #error checking
 
     stringToFile(lines)
 
@@ -338,12 +332,12 @@ root.geometry("750x600+10+10")
 root.resizable(width=False, height=False)
 
 #Background image
-background = tk.PhotoImage(file="backer.ppm")
-background = background.zoom(3, 3)
+#background = tk.PhotoImage(file="backer.ppm")
+#background = background.zoom(3, 3)
 
 #Start Screen widget creation
 pg1_label_title = tk.Label(root, text="Temple 3-in-1 AMSAT Special", fg="white", bg="black", font="Verdana 20 bold")
-pg1_label_back = tk.Label(root, image=background)
+pg1_label_back = tk.Label(root)
 pg1_button = tk.Button(root, text="Start", font="Verdana 12", padx=55, pady=5, command=start_to_idle)
 
 #Start Screen placing commands
@@ -369,4 +363,3 @@ pg2_label_closing = tk.Label(root, text="Pass window closing: None", font="Verda
 pg2_label_sat_freq = tk.Label(root, text="Down-link frequency: None",font="Verdana 10")
 
 root.mainloop()
-
