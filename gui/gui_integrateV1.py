@@ -305,7 +305,7 @@ def set_selected_sat(listbox,window):
 
     if(selected_sat.pass_window != None):
         pg2_label_opening.config(text="Pass window opening: " + str(selected_sat.pass_window[0]))
-        pg2_label_peak.config(text="Pass window opening: " + str(selected_sat.pass_window[2]))
+        pg2_label_peak.config(text="Pass window peak: " + str(selected_sat.pass_window[2]))
         pg2_label_closing.config(text="Pass window closing: " + str(selected_sat.pass_window[1]))
 
         pg2_label_opening.place(relx=0.05, rely=0.27, anchor='nw')
