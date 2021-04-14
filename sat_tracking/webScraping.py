@@ -13,7 +13,7 @@ from init_port import *
 ser = initSerialPort(COMPORT)
 
 class Sat: #each satellite from the text file is stored as an object of class sat
-    def __init__(self, tle = "", station = "", catalogNum = 0, checkSum1 = 0, checkSum2 = 0,pass_window = [], freq = 0):
+    def __init__(self, tle = "", station = "", pass_window = [], freq = 0):
         self.tle = tle #the web parsed TLE as a string
         self.station = station #satellite name
         self.pass_window = pass_window #Adjusted pass window + or - X minutes around TCA
