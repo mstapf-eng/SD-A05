@@ -114,7 +114,8 @@ def parser(link):
     stringToFile(lines)
 
     station,lengthSt = dec.decode("kep_el.txt")##returns TLE's for all satellites listed
-
+    
+    global satList
     satList = []
 
     for i in range(0, lengthSt):
