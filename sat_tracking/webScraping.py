@@ -76,10 +76,7 @@ class Sat: #each satellite from the text file is stored as an object of class sa
 
             tracker.set_epoch(time.time()) ##sets the current time as the epoch (observation time), run this at the AOS
 
-            #print("az         : %0.1f" % tracker.azimuth())
-            #print("ele        : %0.1f" % tracker.elevation())
-            #print("range      : %0.0f km" % (tracker.range() / 1000))
-            #print("range rate : %0.3f km/s" % (tracker.satellite.range_velocity / 1000))
+           
             doppler = tracker.doppler(self.freq*1e6)  ##send Doppler shifted freq in MHz to transceiver
             data = send_command(ser, 'FA' + str(doppler) + ';', 0)
 
@@ -236,7 +233,7 @@ def decode(txtfile):
 
 
 
-parser("https://www.amsat.org/tle/current/nasabare.txt")
+#parser("https://www.amsat.org/tle/current/nasabare.txt")
 
 
 #sats['AO-07'].to_transceiver()
