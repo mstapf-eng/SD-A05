@@ -13,12 +13,9 @@ from init_port import *
 ser = initSerialPort(COMPORT)
 
 class Sat: #each satellite from the text file is stored as an object of class sat
-    def __init__(self, tle = "", station = "", catalogNum = 0, checkSum1 = 0, checkSum2 = 0,pass_window = [], freq = 0):
+    def __init__(self, tle = "", station = "", pass_window = [], freq = 0):
         self.tle = tle #the web parsed TLE as a string
         self.station = station #satellite name
-        self.catalogNum = catalogNum #satellite ID number used to lookup satellites
-        self.checkSum1 = checkSum1
-        self.checkSum2 = checkSum2
         self.pass_window = pass_window #Adjusted pass window + or - X minutes around TCA
         self.freq = freq #satellite downlink frequency in MHz
 
@@ -27,7 +24,7 @@ class Sat: #each satellite from the text file is stored as an object of class sa
         time = datetime.utcnow()
 
         orb = Orbital(self.station.rstrip(), "best_file.txt")
-        passes = orb.get_next_passes(time, 1, 75.15285, 39.98251, 0, tol=0.001, horizon=0)  # Temple radio room coords, longitude value is actually negative
+        passes = orb.get_next_passes(time, 2, -75.15285, 39.98251, 0, tol=0.001, horizon=0)  # Temple radio room coords, longitude value is negative
                                         #  ^ time in hours to look for sats
                                         # can set a input box for user
         if len(passes) != 0:
@@ -60,7 +57,7 @@ class Sat: #each satellite from the text file is stored as an object of class sa
     def calc_doppler(self):
 
         global doppler
-        ground_coords = ("39.98251", "75.15285", "0") #MAY NEED TO INCLUDE HEIGHT OF ANTENNAE ON THE ROOF FOR ACCURACY
+        ground_coords = ("39.98251", "-75.15285", "0") #MAY NEED TO INCLUDE HEIGHT OF ANTENNAE ON THE ROOF FOR ACCURACY
 
         tle_split = self.tle.splitlines()
         tle_dict = {"name": tle_split[0],
@@ -79,7 +76,7 @@ class Sat: #each satellite from the text file is stored as an object of class sa
             ##SET an update label here to display the
 
             time.sleep(0.5)
-        ser.close()
+        #ser.close()
 
         print("This pass for "+self.station.rstrip()+ " has ended. Select another satellite.")
 
@@ -109,13 +106,13 @@ def parser(link):
 
     stringToFile(lines)
 
-    station,catalogNumber,checkSum1,checkSum2,lengthSt = dec.decode("kep_el.txt")##returns TLE's for all satellites listed
+    station,lengthSt = dec.decode("kep_el.txt")##returns TLE's for all satellites listed
 
     global satList
     satList= []
 
     for i in range(0, lengthSt):
-        newSat = Sat("",station[i], catalogNumber[i],checkSum1[i], checkSum2[i])
+        newSat = Sat("",station[i])
         satList.append(newSat)
 
     k = open("kep_el.txt", "r")
@@ -165,7 +162,7 @@ def parser(link):
     sats['NOAA-15'].freq = 137.620
     sats['GO-32'].freq = 435.225
     sats['ISS'].freq = 145.800
-    sats['NO-44'].freq = 145.827
+ '''sats['NO-44'].freq = 145.827
     sats['SO-50'].freq = 436.795
     sats['NOAA-18'].freq = 137.913
     sats['CO-55'].freq = 437.470
@@ -205,7 +202,7 @@ def parser(link):
     sats['HODOYOSHI-1'].freq = 467.674
     sats['CHUBUSAT-1'].freq = 437.485
     sats['QSAT-EOS'].freq = 0 ##unknown frequency
-    sats['FIREBIRD FU3'].freq = 437.405
+    sats['FIREBIRD FU3'].freq = 437.405 '''
 
 def listToString(list):
     # initialize an empty string
