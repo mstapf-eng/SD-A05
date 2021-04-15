@@ -1,0 +1,522 @@
+
+import tkinter as tk
+import re
+import time
+from datetime import datetime, timedelta
+import requests
+from bs4 import BeautifulSoup
+from pyorbital.orbital import Orbital
+from tzlocal import get_localzone
+import LETdec as dec
+import sattracker
+from init_port import *
+
+ser = initSerialPort(COMPORT)
+
+class Sat:  # each satellite from the text file is stored as an object of class sat
+    def __init__(self, tle="", station="", catalogNum=0, checkSum1=0, checkSum2=0, pass_window=[], freq=0):
+        self.tle = tle  # the web parsed TLE as a string
+        self.station = station  # satellite name
+        self.pass_window = pass_window  # Adjusted pass window + or - X minutes around TCA
+        self.freq = freq  # satellite downlink frequency in MHz
+
+    def get_passes(self):  ##all pass times reported in UTC time (-4 hours for EST)
+
+        time = datetime.utcnow()
+
+        orb = Orbital(self.station.rstrip(), "best_file.txt")
+
+        ## Edit
+        print("You are at "+str(longitude)+ " long, "+str(latitude)+" lat, and "+str(altitude)+" alt")
+        passes = orb.get_next_passes(time, 24, longitude, latitude, altitude, tol=0.001,
+                                     horizon=0)  # Temple radio room coords, longitude value is negative
+
+        print(self.station.rstrip())
+        if len(passes) != 0:
+
+            for x in range(0, len(passes)):
+                passes[x] = list(passes[x])
+
+            new_passes = []
+            for sublist in passes:
+                for item in sublist:
+                    new_passes.append(item)
+
+            format = "%Y-%m-%d %H:%M:%S"
+            now_local = []
+
+            for y in range(0, len(new_passes)):
+                now_local.append(new_passes[y].astimezone(get_localzone()))
+                # now_local[y] = now_local[y].strftime(format)
+
+            real_pass_window = now_local
+
+            TCA_plus = real_pass_window[2] + timedelta(minutes=2)  # get the time 2 minutes after TCA
+            TCA_minus = real_pass_window[2] + timedelta(minutes=-2)  # get the time 2 minutes before TCA
+            TCA_peak =real_pass_window[2]
+
+            sats[self.station.rstrip()].pass_window = [TCA_minus.strftime(format), TCA_plus.strftime(
+                format),TCA_peak.strftime(format)]  # trying to find the 'sweet spot' for best downlink around TCA
+
+        else:
+            sats[
+                self.station.rstrip()].pass_window = None  # pass_window is None if the sat does not pass within the alotted hours
+
+    def calc_doppler(self):
+
+        global doppler
+        ground_coords = (
+        "39.98251", "-75.15285", "0")  # MAY NEED TO INCLUDE HEIGHT OF ANTENNAE ON THE ROOF FOR ACCURACY
+
+        tle_split = self.tle.splitlines()
+        tle_dict = {"name": tle_split[0],
+                    "tle1": tle_split[1],
+                    "tle2": tle_split[2]
+                    }
+
+        tracker = sattracker.Tracker(satellite=tle_dict, groundstation=ground_coords)
+
+        while datetime.utcnow() < datetime.strptime(self.pass_window[1],
+                                                    "%Y-%m-%d %H:%M:%S"):  # loop runs until the end of satellite pass
+
+            tracker.set_epoch(time.time())  ##sets the current time as the epoch (observation time), run this at the AOS
+
+            doppler = tracker.doppler(self.freq * 1e6)  ##send Doppler shifted freq in MHz to transceiver
+            data = send_command(ser, 'FA' + str(doppler) + ';', 0)
+
+            time.sleep(0.5)
+        ser.close()
+
+        print("This pass for " + self.station.rstrip() + " has ended. Select another satellite.")
+
+    def to_transceiver(self):
+
+        self.get_passes()
+
+        if (self.pass_window != None):  # if there is a pass within the alotted time
+
+
+            ##EDIT
+            print("Waiting for " + self.station.rstrip() + " to enter your sky...\n")
+            time.sleep(timedelta.total_seconds(datetime.strptime(self.pass_window[0],
+                                                                 "%Y-%m-%d %H:%M:%S") - datetime.utcnow()))  # suspend execution until the satellite pass begins
+
+            print("Now downlinking from " + self.station.rstrip() + "...\n")
+            self.calc_doppler()
+
+        else:
+            print("This satellite does not pass within the alotted time frame. Select another satellite.")
+
+def parser(link):
+    r = requests.get(link)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    result = soup.find_all(text=True)
+
+    lines = listToString(result)
+
+    stringToFile(lines)
+
+    station, lengthSt = dec.decode("kep_el.txt")  ##returns TLE's for all satellites listed
+
+    global satList
+    satList = []
+
+    for i in range(0, lengthSt):
+        newSat = Sat("", station[i])
+        satList.append(newSat)
+
+    k = open("kep_el.txt", "r")
+    TLE_list = k.readlines()
+
+    j = 0
+    for i in range(0, len(TLE_list)):
+        if i == len(TLE_list) - 1:
+            satList[len(satList) - 1].tle = "".join(
+                tuple(TLE_list[-3:]))  # store each TLE (every 3 lines) for its respective satellite
+            satList[len(satList) - 1].tle = satList[len(satList) - 1].tle[:-1]  # remove final "/n" from TLE string
+
+        elif (i + 1) % 3 == 0:
+
+            satList[j].tle = "".join(
+                tuple(TLE_list[(i - 2):i + 1]))  # store each TLE (every 3 lines) for its respective satellite
+            satList[j].tle = satList[j].tle[:-1]  # remove final "/n" from TLE string
+            j = j + 1
+
+    k.close()
+
+    global new_stat
+
+    new_stat = []
+    for sub in station:  # remove all line breaks from station list
+        new_stat.append(re.sub('\n', '', sub))
+
+    global sats
+
+    sats = dict(zip(new_stat, satList))  # create dictionary with sat names as keys for each satellite object
+
+    u_list = []
+    best_file = open("best_file.txt", "w")
+    for i in range(len(TLE_list)):
+        u_list.append(TLE_list[i].upper())  # capitalize all strings in the text file for pyorbital to work
+        best_file.write(u_list[i])
+
+    best_file.close()
+
+    print(satList[1].station)
+
+    ##Set satellite downlink frequencies in MHz
+    sats['AO-07'].freq = 29.400
+    sats['UO-11'].freq = 145.826
+    sats['LO-19'].freq = 437.125
+    sats['HUBBLE'].freq = 2255.5
+    sats['MET-2/21'].freq = 137.85
+    sats['AO-27'].freq = 436.795
+    sats['IO-26'].freq = 435.822
+    sats['FO-29'].freq = 435.900
+    sats['NOAA-15'].freq = 137.620
+    sats['GO-32'].freq = 435.225
+    sats['ISS'].freq = 145.800
+
+def listToString(list):
+    # initialize an empty string
+    str1 = ""
+
+    # traverse in the string
+    for ele in list:
+        str1 += ele
+
+        # return string
+    return str1
+
+def stringToFile(string):
+    text_file = open("kep_el.txt", "w")
+    text_file.write(string)
+    text_file.close()
+
+def decode(txtfile):
+    dec.decode(txtfile)
+
+## END OF WEB SCRAPING ####
+##    START OF GUI     ####
+
+def are_you_sure():
+    #Pop up declarations
+    newWindow = tk.Toplevel(root)
+    newWindow.title("Terminate?")
+    newWindow.geometry("400x150+50+50")
+
+    #Window widget declarations
+    window_label = tk.Label(newWindow, text="Are you sure?", font="Verdana 10 bold")
+    window_button_yes = tk.Button(newWindow, text="Yes", command=root.destroy, padx=20, pady=0.5)
+    window_button_no = tk.Button(newWindow, text="No", command=newWindow.destroy, padx=20, pady=0.5)
+
+    #Widget placements
+    window_label.place(relx=0.4, rely=0.15, anchor='nw')
+    window_button_yes.place(relx=0.3, rely=0.5, anchor='nw')
+    window_button_no.place(relx=0.6, rely=0.5, anchor='nw')
+    return
+
+def start_tracking():
+    selected_sat.to_transceiver()
+
+def start_to_idle():
+    #Wipe start screen
+    pg1_label_title.place_forget()
+    pg1_label_back.place_forget()
+    pg1_button.place_forget()
+
+    # Satellite functions
+    parser("https://www.amsat.org/tle/current/nasabare.txt")
+
+    #Place the idle screen widgets
+    pg2_label_page.place(relx=0.005, rely=0.005, anchor='nw')
+    pg2_button_selection.place(relx=0.05, rely=0.25, anchor='nw')
+    pg2_button_end.place(relx=0.8, rely=0.95, anchor='nw')
+    pg2_button_begin_tracking.place(relx=0.05, rely=0.7, anchor='nw')
+    pg2_label_confirm.place(relx=0.05, rely=0.30, anchor='nw')
+    pg2_label_status.place(relx=0.05, rely=0.75, anchor='nw')
+
+    #### LOCATION INPUTS WIDGETS
+    pg2_label_location.place(relx=0.05, rely=0.098, anchor='nw')
+    pg2_label_lat.place(relx=0.05, rely=0.13, anchor='nw')
+    pg2_input_lata.place(relx=0.05, rely=0.16, anchor='nw')
+    pg2_label_long.place(relx=0.18, rely=0.13, anchor='nw')
+    pg2_input_long.place(relx=0.18, rely=0.16, anchor='nw')
+    pg2_label_elevation.place(relx=0.31, rely=0.13, anchor='nw')
+    pg2_input_elev.place(relx=0.31, rely=0.16, anchor='nw')
+    pg2_button_input_loco.place(relx=0.445, rely=0.155, anchor='nw')
+
+    #### PASS TIME AND SAT FREQUENCY WIDGETS
+    pg2_label_opening.place(relx=0.05, rely=0.5, anchor='nw')
+    pg2_label_peak.place(relx=0.05, rely=0.535, anchor='nw')
+    pg2_label_closing.place(relx=0.05, rely=0.57, anchor='nw')
+    pg2_label_sat_freq.place(relx=0.05, rely=0.37, anchor='nw')
+    pg2_label_alt_freq.place(relx=0.05, rely=0.40, anchor='nw')
+    pg2_input_freq.place(relx=0.57, rely=0.40, anchor='nw')
+    pg2_button_input_freq.place(relx=0.69, rely=0.395, anchor='nw')
+
+    return
+
+def selection_listbox():
+
+    #Window initialization
+    selection_window = tk.Toplevel(root)
+    selection_window.title("Satellite Selection")
+    selection_window.geometry("300x600+50+50")
+    selection_window.resizable(width=False, height=False)
+
+    #window widgets
+    selection_window_listbox = tk.Listbox(selection_window, width=46, height=27, selectmode=tk.SINGLE)
+    selection_window_input = tk.Entry(selection_window, width=13)
+    selection_window_button = tk.Button(selection_window, text="Input Selection", padx=15, pady=2.5,command=lambda: set_selected_sat(selection_window_listbox,selection_window,selection_window_input,defaulter))
+    selection_window_label = tk.Label(selection_window,text="Or search for a specific satellite below",
+                                      font="Verdana 9")
+
+    #Widget placements
+    selection_window_listbox.place(relx=0.005, rely=0.005, anchor='nw')
+    selection_window_button.place(relx=0.25, rely=0.90, anchor='nw')
+    selection_window_label.place(relx=0.05, rely=0.75, anchor='nw')
+    selection_window_input.place(relx=0.3, rely=0.80, anchor='nw')
+
+    defaulter = selection_window_input.get()
+
+    #for loop to populate listbox
+    for i in range(len(satList)):
+        selection_window_listbox.insert(i, satList[i].station.rstrip())
+    return
+
+def set_selected_sat(listbox, window, entry, defaulter):
+    global selected_sat
+    selected_sat = None
+    mismatch_flag = 0
+
+
+    ############  NEEDS SOME WORK ########################################
+
+    input_entry = entry.get()
+    print(input_entry)
+    if input_entry != defaulter:
+        print("entrybox")
+        for i in range(len(satList)):
+            if satList[i].station.rstrip() == input_entry:
+                selected_sat = input_entry
+                mismatch_flag = 0
+                break
+            else:
+                mismatch_flag = 1
+
+    else:
+        print("listbox")
+        selected_sat = listbox.get(listbox.curselection())  # Gets the string from the menu
+
+    if mismatch_flag == 1:
+        error_window = tk.Toplevel(root)
+        error_window.title("Input Error")
+        error_window.geometry("400x150+50+50")
+        error_window.resizable(width=False, height=False)
+
+        error_label = tk.Label(error_window, text="Inputted values are not valid decimal numbers.", font="Verdana 10")
+        error_label2 = tk.Label(error_window, text="Please try again.", font="Verdana 10")
+        error_label.place(relx=0.15, rely=0.15, anchor='nw')
+        error_label2.place(relx=0.35, rely=0.30, anchor='nw')
+        error_button = tk.Button(error_window, text="Okay", command=error_window.destroy, padx=15, pady=3)
+        error_button.place(relx=0.4, rely=0.5, anchor='nw')
+
+    ###########################################################################
+
+    print(selected_sat)
+    print("foo")
+    selected_sat = sats[selected_sat]  # Searches dict for string and gets object
+    selected_sat.get_passes()
+
+    pg2_label_confirm.config(text="Selected satellite: " + str(selected_sat.station.rstrip()))
+    pg2_label_sat_freq.config(text="Down-link frequency: " + str(selected_sat.freq) + " Mhz")
+
+    if selected_sat.pass_window is not None:
+        pg2_label_opening.config(text="Pass window opening: " + str(selected_sat.pass_window[0]))
+        pg2_label_peak.config(text="Pass window peak:     " + str(selected_sat.pass_window[2]))
+        pg2_label_closing.config(text="Pass window closing:  " + str(selected_sat.pass_window[1]))
+
+        pg2_label_opening.place(relx=0.05, rely=0.50, anchor='nw')
+        pg2_label_peak.place(relx=0.05, rely=0.535, anchor='nw')
+        pg2_label_closing.place(relx=0.05, rely=0.57, anchor='nw')
+        pg2_label_window_error.place_forget()
+    else:
+        pg2_label_opening.place_forget()
+        pg2_label_peak.place_forget()
+        pg2_label_closing.place_forget()
+        pg2_label_window_error.place(relx=0.05, rely=0.33, anchor='nw')
+
+    print("===============================================")
+    window.destroy()
+    #Add update labels here for pass times, and so forth from global list
+    #Add a frequncy label too
+
+    return
+
+def get_location():
+
+    global longitude,latitude,altitude
+    longitude = -75.15285
+    latitude = 39.98251
+    altitude = 20
+
+    later = pg2_input_lata.get()
+    longer = pg2_input_long.get()
+    elevator = pg2_input_elev.get()
+
+    #Error checking for floats
+    try:
+        float(later)
+        float(longer)
+        float(elevator)
+
+        #Error
+        if -90.0 <= float(later) <= 90.0 and -180.0 <= float(longer) <= 180.0:
+            print("valid location")
+            latitude = float(later)
+            longitude = float(longer)
+            altitude = float(elevator)
+        else:
+            print("not valid location")
+            error_window = tk.Toplevel(root)
+            error_window.title("Value Error")
+            error_window.geometry("400x150+50+50")
+            error_window.resizable(width=False, height=False)
+
+            error_label = tk.Label(error_window, text="Inputted values are not valid longitude and latitude values.",
+                                   font="Verdana 10")
+            error_label2 = tk.Label(error_window, text="Please try again.", font="Verdana 10")
+            error_label.place(relx=0.01, rely=0.15, anchor='nw')
+            error_label2.place(relx=0.35, rely=0.30, anchor='nw')
+            error_button = tk.Button(error_window, text="Okay", command=error_window.destroy, padx=15, pady=3)
+            error_button.place(relx=0.4, rely=0.5, anchor='nw')
+
+    #Input error message box
+    except ValueError:
+        print("not valid strings")
+
+        error_window = tk.Toplevel(root)
+        error_window.title("Input Error")
+        error_window.geometry("400x150+50+50")
+        error_window.resizable(width=False, height=False)
+
+        error_label = tk.Label(error_window,text="Inputted values are not valid decimal numbers.", font="Verdana 10")
+        error_label2 = tk.Label(error_window,text="Please try again.",font="Verdana 10")
+        error_label.place(relx=0.15, rely=0.15, anchor='nw')
+        error_label2.place(relx=0.35, rely=0.30, anchor='nw')
+        error_button = tk.Button(error_window, text="Okay", command=error_window.destroy, padx=15, pady=3)
+        error_button.place(relx=0.4, rely=0.5, anchor='nw')  ##
+
+    #Prints to make sure program has the correct vals
+    print(latitude)
+    print(longitude)
+    print(altitude)
+    print()
+
+    return
+
+def get_sat_freq():
+
+    sat_freq = pg2_input_freq.get()
+
+    try:
+        float(sat_freq)
+
+        #Error
+        if float(sat_freq) > 0:
+            print("valid freq")
+            selected_sat.freq = float(sat_freq)
+            pg2_label_sat_freq.config(text="Down-link frequency: " + str(selected_sat.freq) + " Mhz")
+
+        else:
+            print("not valid freq")
+            error_window = tk.Toplevel(root)
+            error_window.title("Value Error")
+            error_window.geometry("400x150+50+50")
+            error_window.resizable(width=False, height=False)
+
+            error_label = tk.Label(error_window, text="Inputted value is not a valid frequency.",font="Verdana 10")
+            error_label2 = tk.Label(error_window, text="Please try again.", font="Verdana 10")
+            error_label.place(relx=0.15, rely=0.15, anchor='nw')
+            error_label2.place(relx=0.35, rely=0.30, anchor='nw')
+            error_button = tk.Button(error_window, text="Okay", command=error_window.destroy, padx=15, pady=3)
+            error_button.place(relx=0.4, rely=0.5, anchor='nw')
+
+    #Input error message box
+    except ValueError:
+        print("not valid strings")
+
+        error_window = tk.Toplevel(root)
+        error_window.title("Input Error")
+        error_window.geometry("400x150+50+50")
+        error_window.resizable(width=False, height=False)
+
+        error_label = tk.Label(error_window,text="Inputted value is not a valid decimal number.", font="Verdana 10")
+        error_label2 = tk.Label(error_window,text="Please try again.",font="Verdana 10")
+        error_label.place(relx=0.15, rely=0.15, anchor='nw')
+        error_label2.place(relx=0.35, rely=0.30, anchor='nw')
+        error_button = tk.Button(error_window, text="Okay", command=error_window.destroy, padx=15, pady=3)
+        error_button.place(relx=0.4, rely=0.5, anchor='nw')
+
+    print(selected_sat.freq)
+
+    return
+
+#Root stuff
+root = tk.Tk(className="Temple Satellite Tracker")
+root.geometry("750x600+10+10")
+root.resizable(width=False, height=False)
+
+#Background image
+background = tk.PhotoImage(file="backer.ppm")
+background = background.zoom(3, 3)
+
+#Start Screen widget creation
+pg1_label_title = tk.Label(root, text="Temple AMSAT App", fg="white", bg="black", font="Verdana 20 bold")
+pg1_label_back = tk.Label(root, image=background)
+pg1_button = tk.Button(root, text="Start", font="Verdana 12", padx=55, pady=5, command=start_to_idle)
+
+#Start Screen placing commands
+pg1_label_title.place(relx=0.55, rely=0.07, anchor='nw')
+pg1_label_title.lift()
+pg1_label_back.place(x=0.0, y=0.0, relwidth=1.0, relheight=1.0)
+pg1_button.place(relx=0.40, rely=0.95, anchor='sw')
+
+#Idle Screen widget creation
+pg2_label_page = tk.Label(root, text="Tracking Idle Page", font="Verdana 10 bold")
+pg2_button_selection = tk.Button(root, text="Select a satellite", command=selection_listbox)
+pg2_button_end = tk.Button(root, text="End Program and Tracking", command=are_you_sure)
+pg2_button_begin_tracking = tk.Button(text="Begin Tracking",command=start_tracking)
+pg2_label_confirm = tk.Label(root, text="Selected satellite: None", font="Verdana 10")
+pg2_label_status = tk.Label(root, text="Program status: Test", font="Verdana 10")
+pg2_label_window_error = tk.Label(root, text="Satellite does not pass over in inputted window, "
+                                             "please adjust time window length",font="Verdana 10")
+
+#Location labels and buttons
+default_lat = tk.StringVar(root, value="-75.15285")
+default_long = tk.StringVar(root, value ="39.98251")
+default_ele = tk.StringVar(root,value = "20")
+
+pg2_label_location = tk.Label(root,text='To begin, enter your latitude and longitude in decimal degrees and'
+                                        ' receiver altitude in meters.',font="Verdana 10")
+pg2_label_long = tk.Label(root,text="Longitude",font="Verdana 8")
+pg2_label_lat = tk.Label(root,text="Latitude",font="Verdana 8")
+pg2_label_elevation = tk.Label(root,text="Altitude",font="Verdana 8")
+pg2_input_lata = tk.Entry(root,width=13,textvariable=default_lat)
+pg2_input_long = tk.Entry(root,width=13,textvariable=default_long)
+pg2_input_elev = tk.Entry(root,width=13,textvariable=default_ele)
+pg2_button_input_loco = tk.Button(root,text="Input Location",command=get_location,padx=10)
+
+#Pass Labels and Sat info
+pg2_label_opening = tk.Label(root, text="Pass window opening:None", font="Verdana 10")
+pg2_label_peak = tk.Label(root, text="Pass window peak: None", font="Verdana 10")
+pg2_label_closing = tk.Label(root, text="Pass window closing: None", font="Verdana 10")
+pg2_label_sat_freq = tk.Label(root, text="Down-link frequency: None",font="Verdana 10")
+pg2_label_alt_freq = tk.Label(root, text="If Down-link frequency is undefined, please enter in MHz:",font="Verdana 10")
+pg2_input_freq = tk.Entry(root,width=12)
+pg2_button_input_freq = tk.Button(root,text="Input Frequency",padx=10,command=get_sat_freq)
+
+root.mainloop()
+
+
