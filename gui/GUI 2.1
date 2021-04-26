@@ -80,8 +80,32 @@ class Sat:  # each satellite from the text file is stored as an object of class 
             tracker.set_epoch(time.time())  ##sets the current time as the epoch (observation time), run this at the AOS
 
             doppler = tracker.doppler(self.freq * 1e6)  ##send Doppler shifted freq in MHz to transceiver
+            log("Sending FA command...")
             data = send_command(ser, 'FA' + str(doppler) + ';', 0)
-
+            log("FA: success!")
+            
+            log("Sending IF command...")
+            data = send_command(ser, 'IF;', 38)
+            # Now the response from the radio is parsed...
+            tmp  = data.decode('ascii')
+            freq = float(tmp[2:13])/1000. # This is the frequency in kHz.
+            tmp  = int(tmp[28])           # This is current state TX/RX.
+            Status = ['RX', 'TX']
+            txstatus = Status[tmp]
+            log("IF: success!")
+            
+            log("Sending MD command...")
+            data = send_command(ser, 'MD;', 4)
+            # Now the response from the radio is parsed...
+            tmp = data.decode('ascii')
+            radioMode = ["none", "LSB", "USB", "CW", "FM", "AM", "FSK", "CW-R", "none.", "FSK-R"]
+            mode = int(tmp[2:3])
+            log("MD: success!")
+            
+            print("QRG [kHz]:\t" + str(freq))
+            print("Mode:     \t" + radioMode[mode])
+            print("Status:   \t" + txstatus)
+            
             time.sleep(0.5)
         ser.close()
 
